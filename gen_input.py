@@ -1,3 +1,4 @@
+#gen_input.py
 import random
 
 def is_valid(board, row, col, num):

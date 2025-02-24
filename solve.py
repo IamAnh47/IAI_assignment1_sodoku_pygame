@@ -1,3 +1,4 @@
+#solve.py
 from board import Board, Cell
 
 class Solver:
