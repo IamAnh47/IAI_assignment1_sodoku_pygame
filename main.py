@@ -12,7 +12,7 @@ import gen_input
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-LIGHT_GRAY = (220, 220, 220)
+COLOR_OPTION = (0, 0, 0, 100)
 GREEN = (0, 200, 0)
 RED = (200, 0, 0)
 BLUE = (0, 0, 200)
@@ -53,7 +53,7 @@ class Toggle:
         circle_y = self.rect.centery
         pygame.draw.circle(surface, WHITE, (circle_x, circle_y), circle_radius)
         if self.font:
-            label = self.font.render("Step-by-step", True, BLACK)
+            label = self.font.render("Step-by-step", True, WHITE)
             surface.blit(label, (self.rect.right + 10, self.rect.top))
 
     def handle_event(self, event):
@@ -103,7 +103,7 @@ class ColorSlider:
 class SudokuGame:
     def __init__(self):
         pygame.init()
-        self.WIDTH = 600
+        self.WIDTH = 1000
         self.HEIGHT = 700
         self.BOARD_SIZE = 540
         self.OPTION_HEIGHT = self.HEIGHT - self.BOARD_SIZE
@@ -139,21 +139,89 @@ class SudokuGame:
     def setup_menu_ui(self):
         self.buttons.clear()
         difficulties = ["Basic", "Easy", "Intermediate", "Advance", "Extreme", "Evil"]
+        button_width = 90
+        button_height = 30
+        spacing = 10
+        total_width = len(difficulties) * button_width + (len(difficulties) - 1) * spacing
+        start_x = (self.WIDTH - total_width) // 2
+        y = self.BOARD_SIZE + 20
         for i, diff in enumerate(difficulties):
-            btn = Button(rect=(20 + i * 95, self.BOARD_SIZE + 20, 90, 30), text=diff, callback=lambda idx=i: self.select_difficulty(idx + 1), font=self.font)
+            btn = Button(
+                rect=(start_x + i * (button_width + spacing), y, button_width, button_height),
+                text=diff,
+                callback=lambda idx=i: self.select_difficulty(idx + 1),
+                font=self.font
+            )
             self.buttons.append(btn)
+
         self.input_buttons.clear()
-        preset_btn = Button(rect=(50, self.BOARD_SIZE + 60, 120, 30), text="Preset", callback=lambda: self.select_input_mode(1), font=self.font)
-        random_btn = Button(rect=(200, self.BOARD_SIZE + 60, 120, 30), text="Random", callback=lambda: self.select_input_mode(2), font=self.font)
+        button_width = 120
+        button_height = 30
+        spacing = 20
+        total_width = 2 * button_width + spacing
+        start_x = (self.WIDTH - total_width) // 2
+        y = self.BOARD_SIZE + 60
+        preset_btn = Button(
+            rect=(start_x, y, button_width, button_height),
+            text="Preset",
+            callback=lambda: self.select_input_mode(1),
+            font=self.font
+        )
+        random_btn = Button(
+            rect=(start_x + button_width + spacing, y, button_width, button_height),
+            text="Random",
+            callback=lambda: self.select_input_mode(2),
+            font=self.font
+        )
         self.input_buttons.extend([preset_btn, random_btn])
+
         self.algo_buttons.clear()
-        dfs_btn = Button(rect=(50, self.BOARD_SIZE + 100, 100, 30), text="DFS", callback=lambda: self.select_algorithm(1), font=self.font)
-        mrv_btn = Button(rect=(200, self.BOARD_SIZE + 100, 100, 30), text="MRV", callback=lambda: self.select_algorithm(2), font=self.font)
+        button_width = 100
+        button_height = 30
+        spacing = 20
+        toggle_width = 60
+        total_width = 2 * button_width + spacing + spacing + toggle_width
+        start_x = (self.WIDTH - total_width) // 2
+        y = self.BOARD_SIZE + 100
+        dfs_btn = Button(
+            rect=(start_x, y, button_width, button_height),
+            text="DFS",
+            callback=lambda: self.select_algorithm(1),
+            font=self.font
+        )
+        mrv_btn = Button(
+            rect=(start_x + button_width + spacing, y, button_width, button_height),
+            text="MRV",
+            callback=lambda: self.select_algorithm(2),
+            font=self.font
+        )
         self.algo_buttons.extend([dfs_btn, mrv_btn])
-        self.toggle = Toggle(rect=(350, self.BOARD_SIZE + 100, 60, 30), initial=False, font=self.font)
+
+        self.toggle = Toggle(
+            rect=(start_x + button_width + spacing + button_width + spacing, y, toggle_width, button_height),
+            initial=False,
+            font=self.font
+        )
+
         self.end_buttons.clear()
-        play_again = Button(rect=(150, self.BOARD_SIZE + 50, 120, 40), text="Play Again", callback=self.restart_game, font=self.font)
-        exit_btn = Button(rect=(330, self.BOARD_SIZE + 50, 120, 40), text="Exit", callback=self.exit_game, font=self.font)
+        button_width = 120
+        button_height = 40
+        spacing = 20
+        total_width = 2 * button_width + spacing
+        start_x = (self.WIDTH - total_width) // 2
+        y = self.BOARD_SIZE + 50
+        play_again = Button(
+            rect=(start_x, y, button_width, button_height),
+            text="Play Again",
+            callback=self.restart_game,
+            font=self.font
+        )
+        exit_btn = Button(
+            rect=(start_x + button_width + spacing, y, button_width, button_height),
+            text="Exit",
+            callback=self.exit_game,
+            font=self.font
+        )
         self.end_buttons.extend([play_again, exit_btn])
 
     def save_result(self):
@@ -232,9 +300,22 @@ class SudokuGame:
                 except Exception as e:
                     print("Lỗi đọc file:", e)
                     return
-            else:
-                puzzle, _ = gen_input.generate_input(self.difficulty)
-                self.board_obj = Board(puzzle)
+            elif self.input_mode == 2:
+                # Sử dụng file đã lưu: input/<level>_gen.txt
+                level_names = {1: "basic", 2: "easy", 3: "intermediate", 4: "advance", 5: "extreme", 6: "evil"}
+                file_input = os.path.join("input", f"{level_names[self.difficulty]}_gen.txt")
+                try:
+                    puzzle = []
+                    with open(file_input, 'r') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line:
+                                row = list(map(int, line.split()))
+                                puzzle.append(row)
+                    self.board_obj = Board(puzzle)
+                except Exception as e:
+                    print("Lỗi đọc file:", e)
+                    return
             if algo == 1:
                 self.solver = DFSSolver(self.board_obj)
                 solve_func = self.solver.solve_dfs
@@ -283,14 +364,20 @@ class SudokuGame:
             for col in range(9):
                 value = self.board_obj.grid[row][col].get_value()
                 if value != 0:
-                    color = RED if self.step_by_step and not self.board_obj.grid[row][col].isfixed() else BLACK
+                    if self.board_obj.grid[row][col].isfixed():
+                        color = GREEN
+                    else:
+                        color = RED if self.step_by_step else BLACK
                     text_surface = self.large_font.render(str(value), True, color)
-                    text_rect = text_surface.get_rect(center=(col * cell_size + cell_size // 2, row * cell_size + cell_size // 2))
+                    text_rect = text_surface.get_rect(
+                        center=(col * cell_size + cell_size // 2, row * cell_size + cell_size // 2))
                     board_surface.blit(text_surface, text_rect)
         self.screen.blit(board_surface, (board_x, board_y))
 
     def draw_options(self):
-        pygame.draw.rect(self.screen, LIGHT_GRAY, (0, self.BOARD_SIZE, self.WIDTH, self.OPTION_HEIGHT))
+        option_surface = pygame.Surface((self.WIDTH, self.OPTION_HEIGHT), pygame.SRCALPHA)
+        option_surface.fill(COLOR_OPTION)
+        self.screen.blit(option_surface, (0, self.BOARD_SIZE))
         if self.state == "menu":
             for btn in self.buttons:
                 btn.draw(self.screen)
@@ -302,8 +389,8 @@ class SudokuGame:
                 btn.draw(self.screen)
             self.toggle.draw(self.screen)
         elif self.state == "finished":
-            time_text = self.font.render(f"Time: {self.solve_time:.6f} s", True, BLACK)
-            mem_text = self.font.render(f"Memory: {self.solve_memory:.6f} KB", True, BLACK)
+            time_text = self.font.render(f"Time: {self.solve_time:.6f} s", True, WHITE)
+            mem_text = self.font.render(f"Memory: {self.solve_memory:.6f} KB", True, WHITE)
             self.screen.blit(time_text, (50, self.BOARD_SIZE + 10))
             self.screen.blit(mem_text, (250, self.BOARD_SIZE + 10))
             for btn in self.end_buttons:
