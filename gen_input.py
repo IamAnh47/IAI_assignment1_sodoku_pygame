@@ -35,7 +35,7 @@ def generate_complete_board():
 
 def generate_puzzle(level):
     """
-    Sinh puzzle dựa trên bảng đã hoàn chỉnh.
+    Sinh puzzle.
     Cấp độ tương ứng với số ô gợi ý:
       1: Basic        -> 40 clues
       2: Easy         -> 36 clues
@@ -61,7 +61,7 @@ def generate_puzzle(level):
 
 def generate_input(level):
     """
-    Sinh ra puzzle ngẫu nhiên theo cấp độ, ghi vào file input/<level>_gen.txt.
+    Sinh ra puzzle random theo level, ghi vào file input/<level>_gen.txt.
     Trả về puzzle và solution.
     """
     level_names = {1: "basic", 2: "easy", 3: "intermediate",

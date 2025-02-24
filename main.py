@@ -10,7 +10,7 @@ from solve import Solver as DFSSolver
 from solve_mrv import MRVSolver
 import gen_input
 
-# -------------------- Định nghĩa màu sắc --------------------
+# -------------------- Color --------------------
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 LIGHT_GRAY = (220, 220, 220)
