@@ -10,14 +10,12 @@ from solve import Solver as DFSSolver
 from solve_mrv import MRVSolver
 import gen_input
 
-# -------------------- Color --------------------
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 LIGHT_GRAY = (220, 220, 220)
 GREEN = (0, 200, 0)
 RED = (200, 0, 0)
 BLUE = (0, 0, 200)
-
 
 class Button:
     def __init__(self, rect, text, callback, font, bg_color=BLUE, text_color=WHITE):
@@ -158,6 +156,18 @@ class SudokuGame:
         exit_btn = Button(rect=(330, self.BOARD_SIZE + 50, 120, 40), text="Exit", callback=self.exit_game, font=self.font)
         self.end_buttons.extend([play_again, exit_btn])
 
+    def save_result(self):
+        level_names = {1: "basic", 2: "easy", 3: "intermediate", 4: "advance", 5: "extreme", 6: "evil"}
+        level = level_names.get(self.difficulty, "basic")
+        output_folder = "output"
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        output_filename = os.path.join(output_folder, f"{level}.txt")
+        with open(output_filename, "w") as f:
+            for row in self.board_obj.grid:
+                line = " ".join(str(cell.get_value()) for cell in row)
+                f.write(line + "\n")
+
     def select_difficulty(self, level):
         self.difficulty = level
         print("Chọn cấp độ:", level)
@@ -234,10 +244,12 @@ class SudokuGame:
             self.solve_thread = threading.Thread(target=self.run_solver_animation, args=(solve_func,))
             self.solve_thread.start()
         else:
+            self.save_result()
             self.state = "finished"
 
     def run_solver_animation(self, solve_func):
         solve_func(drawFlag=True)
+        self.save_result()
         self.state = "finished"
 
     def run_solver(self, solve_func):

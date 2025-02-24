@@ -6,10 +6,11 @@ Giải bài toán Sudoku sử dụng hai thuật toán chính: DFS (Depth-First 
 ## Giới Thiệu
 
 Dự án được hiên thực bởi nhóm BTL_TTNT_HK242
-Quy tắc: không lặp lại trong cùng hàng, cột và khối 3x3
 ---
 
 ## Thuật toán
+Quy tắc: không lặp lại trong cùng hàng, cột và khối 3x3
+### DFS
 
 ### MRV
 - Quét bảng và xác định ô trống:
@@ -20,7 +21,7 @@ Với mỗi ô trống, kiểm tra các giá trị từ 1 đến 9 có thể đi
 
 - Chọn ô có ít lựa chọn nhất:
 Ô trống có số lựa chọn hợp lệ ít nhất được coi là "ô khó nhất" và ưu tiên giải trước. 
-=> Nếu ô chỉ có một vài lựa chọn, sai sót tại đây sẽ nhanh chóng được phát hiện -> giúp quá trình giải đệ quy hiệu quả hơn.
+=> Nếu ô chỉ có một vài lựa chọn, nếu bị sai sẽ nhanh chóng phát hiện -> giúp quá trình giải đệ quy hiệu quả hơn.
 
 - Thử từng giá trị khả thi:
 Với ô đã chọn, lần lượt điền từng giá trị hợp lệ, sau đó đệ quy giải phần còn lại.
