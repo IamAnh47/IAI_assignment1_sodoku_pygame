@@ -37,7 +37,7 @@ def generate_puzzle(level, n, block_rows, block_cols):
         mapping = {1: 40, 2: 36, 3: 32, 4: 28, 5: 24, 6: 22}
     elif n == 12:
         mapping = {1: 50, 2: 46, 3: 42, 4: 38, 5: 34, 6: 30}
-    elif n == 16:
+    elif n == 15:
         mapping = {1: 80, 2: 74, 3: 68, 4: 62, 5: 56, 6: 50}
     clues = mapping.get(level, mapping[1])
     complete_board = generate_complete_board(n, block_rows, block_cols)
@@ -61,3 +61,6 @@ def generate_input(level, n=9, block_rows=3, block_cols=3):
             line = " ".join(str(num) for num in row)
             f.write(line + "\n")
     return puzzle, solution
+
+
+
