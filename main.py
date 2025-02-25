@@ -472,7 +472,40 @@ class SudokuGame:
                             if btn.is_clicked(pos):
                                 btn.callback()
 
+    def show_intro(self):
+        if os.path.exists("intro_bg.png"):
+            intro_bg = pygame.image.load("intro_bg.png")
+            intro_bg = pygame.transform.scale(intro_bg, (self.WIDTH, self.HEIGHT))
+        else:
+            intro_bg = None
+        intro = True
+        intro_font = pygame.font.SysFont("Arial", 40)
+        skip_font = pygame.font.SysFont("Arial", 24)
+        while intro:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    intro = False
+            if intro_bg:
+                self.screen.blit(intro_bg, (0, 0))
+            else:
+                self.screen.fill(BLACK)
+            line1 = intro_font.render("Welcome to the sudoku of the BTL_TTNT_HK242", True, BLACK)
+            line2 = intro_font.render("Instructor: Mr. Vuong Ba Thinh!", True, BLACK)
+            skip_text = skip_font.render("Press any key or click to skip ...", True, BLACK)
+            line1_rect = line1.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2 - 20))
+            line2_rect = line2.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2 + 20))
+            skip_rect = skip_text.get_rect(center=(self.WIDTH // 2, self.HEIGHT - 100))
+            self.screen.blit(line1, line1_rect)
+            self.screen.blit(line2, line2_rect)
+            self.screen.blit(skip_text, skip_rect)
+            pygame.display.flip()
+            self.clock.tick(30)
+
     def run(self):
+        self.show_intro()
         while self.running:
             self.handle_events()
             if self.background_image:
