@@ -1,4 +1,3 @@
-#board.py
 import os
 import time
 
@@ -6,7 +5,7 @@ class Cell:
     def __init__(self, value):
         self.value = value
         if value != 0:
-            self.is_fixed = True  # Ô đã được điền
+            self.is_fixed = True
         else:
             self.is_fixed = False
 
@@ -21,30 +20,51 @@ class Cell:
         return self.is_fixed
 
 class Board:
-    def __init__(self, grid_init):
-        # Tạo một lưới 9x9 gồm các Cell
-        self.grid = [[Cell(grid_init[row][col]) for col in range(9)] for row in range(9)]
+    def __init__(self, grid_init, n=9, block_rows=3, block_cols=3):
+        self.n = n
+        self.block_rows = block_rows
+        self.block_cols = block_cols
+        self.grid = [[Cell(grid_init[row][col]) for col in range(n)] for row in range(n)]
 
     def is_valid_cell(self, row, col, value):
-        # Kiểm tra hàng và cột
-        for i in range(9):
+        for i in range(self.n):
             if self.grid[row][i].value == value or self.grid[i][col].value == value:
                 return False
-
-        # Kiểm tra khối 3x3
-        start_row, start_col = 3 * (row // 3), 3 * (col // 3)
-        for i in range(3):
-            for j in range(3):
+        start_row = (row // self.block_rows) * self.block_rows
+        start_col = (col // self.block_cols) * self.block_cols
+        for i in range(self.block_rows):
+            for j in range(self.block_cols):
                 if self.grid[start_row + i][start_col + j].value == value:
                     return False
         return True
 
     def find_empty_cell(self):
-        for row in range(9):
-            for col in range(9):
+        for row in range(self.n):
+            for col in range(self.n):
                 if self.grid[row][col].value == 0:
                     return (row, col)
         return None
+
+    def draw_grid(self, row=-1, col=-1):
+        print(("+" + "-" * 7) * self.block_cols + "+")
+        for i in range(self.n):
+            if i % self.block_rows == 0 and i != 0:
+                print(("+" + "-" * 7) * self.block_cols + "+")
+            for j in range(self.n + 1):
+                if j % self.block_cols == 0:
+                    print("|", end=" ")
+                if j != self.n:
+                    cell_value = self.grid[i][j].get_value()
+                    ctx = cell_value if cell_value != 0 else "."
+                    if i == row and j == col:
+                        print(ctx, end=" ")
+                    elif self.grid[i][j].isfixed():
+                        print(self.color_text(ctx, 'green'), end=" ")
+                    else:
+                        print(ctx, end=" ")
+            print()
+        print(("+" + "-" * 7) * self.block_cols + "+")
+        print()
 
     def color_text(self, text, color):
         COLORS = {
@@ -56,29 +76,8 @@ class Board:
         }
         return f"{COLORS[color]}{text}{COLORS['reset']}"
 
-    def draw_grid(self, row=-1, col=-1):
-        print(("+" + "-" * 7) * 3 + "+")
-        for i in range(9):
-            if i % 3 == 0 and i != 0:
-                print(("+" + "-" * 7) * 3 + "+")
-            for j in range(10):
-                if j % 3 == 0:
-                    print("|", end=" ")
-                if j != 9:
-                    cell_value = self.grid[i][j].get_value()
-                    ctx = cell_value if cell_value != 0 else "."
-                    if i == row and j == col:
-                        print(self.color_text(ctx, 'red'), end=" ")
-                    elif self.grid[i][j].isfixed():
-                        print(self.color_text(ctx, 'green'), end=" ")
-                    else:
-                        print(ctx, end=" ")
-            print()
-        print(("+" + "-" * 7) * 3 + "+")
-        print()
-
     def update_cell_draw(self, row, col, value):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        # os.system('cls' if os.name == 'nt' else 'clear')
         self.grid[row][col].set_value(value)
-        self.draw_grid(row, col)
-        time.sleep(0.01)
+        # self.draw_grid(row, col)
+        time.sleep(0.001)

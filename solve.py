@@ -1,4 +1,3 @@
-#solve.py
 from board import Board, Cell
 
 class Solver:
@@ -10,20 +9,16 @@ class Solver:
         if not empty_cell:
             if drawFlag:
                 self.board.draw_grid()
-            return True  # Đã điền hết bảng
-
+            return True
         row, col = empty_cell
-        for num in range(1, 10):
+        for num in range(1, self.board.n + 1):
             if self.board.is_valid_cell(row, col, num):
                 if drawFlag:
                     self.board.update_cell_draw(row, col, num)
                 else:
                     self.board.grid[row][col].set_value(num)
-
                 if self.solve_dfs(drawFlag):
                     return True
-
-                # Quay lui nếu không tìm được số hợp lệ
                 if drawFlag:
                     self.board.update_cell_draw(row, col, 0)
                 else:

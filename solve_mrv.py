@@ -1,3 +1,4 @@
+#solve_mrv.py
 from board import Board, Cell
 """
 Ở find_empty_cell_mrv:
@@ -23,12 +24,12 @@ class MRVSolver:
 
     def find_empty_cell_mrv(self):
         best_cell = None
-        best_count = 10
-        for row in range(9):
-            for col in range(9):
+        best_count = self.board.n + 1
+        for row in range(self.board.n):
+            for col in range(self.board.n):
                 if self.board.grid[row][col].value == 0:
                     count = 0
-                    for num in range(1, 10):
+                    for num in range(1, self.board.n + 1):
                         if self.board.is_valid_cell(row, col, num):
                             count += 1
                     if count == 0:
@@ -45,7 +46,7 @@ class MRVSolver:
                 self.board.draw_grid()
             return True
         row, col = empty_cell
-        for num in range(1, 10):
+        for num in range(1, self.board.n + 1):
             if self.board.is_valid_cell(row, col, num):
                 if drawFlag:
                     self.board.update_cell_draw(row, col, num)
