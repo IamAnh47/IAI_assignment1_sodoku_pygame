@@ -4,7 +4,7 @@ class Solver:
     def __init__(self, board: Board):
         self.board = board
 
-    def solve_dfs(self, drawFlag=False):
+    def solve(self, drawFlag=False):
         empty_cell = self.board.find_empty_cell()
         if not empty_cell:
             if drawFlag:
@@ -17,7 +17,7 @@ class Solver:
                     self.board.update_cell_draw(row, col, num)
                 else:
                     self.board.grid[row][col].set_value(num)
-                if self.solve_dfs(drawFlag):
+                if self.solve(drawFlag):
                     return True
                 if drawFlag:
                     self.board.update_cell_draw(row, col, 0)

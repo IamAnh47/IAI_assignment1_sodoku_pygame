@@ -321,10 +321,10 @@ class SudokuGame:
         self.solve_start_time = time.time()
         if algo == 1:
             measure_solver = DFSSolver(self.board_obj)
-            measure_func = measure_solver.solve_dfs
+            measure_func = measure_solver.solve
         else:
             measure_solver = MRVSolver(self.board_obj)
-            measure_func = measure_solver.solve_mrv
+            measure_func = measure_solver.solve
         measure_func(drawFlag=False)
         measured_time = time.time() - self.solve_start_time
         snapshot = tracemalloc.take_snapshot()
@@ -353,10 +353,10 @@ class SudokuGame:
                 return
             if algo == 1:
                 self.solver = DFSSolver(self.board_obj)
-                solve_func = self.solver.solve_dfs
+                solve_func = self.solver.solve
             else:
                 self.solver = MRVSolver(self.board_obj)
-                solve_func = self.solver.solve_mrv
+                solve_func = self.solver.solve
             self.solve_thread = threading.Thread(target=self.run_solver_animation, args=(solve_func,))
             self.solve_thread.start()
         else:

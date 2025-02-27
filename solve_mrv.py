@@ -39,7 +39,7 @@ class MRVSolver:
                         best_cell = (row, col)
         return best_cell
 
-    def solve_mrv(self, drawFlag=False):
+    def solve(self, drawFlag=False):
         empty_cell = self.find_empty_cell_mrv()
         if not empty_cell:
             if drawFlag:
@@ -52,7 +52,7 @@ class MRVSolver:
                     self.board.update_cell_draw(row, col, num)
                 else:
                     self.board.grid[row][col].set_value(num)
-                if self.solve_mrv(drawFlag):
+                if self.solve(drawFlag):
                     return True
                 if drawFlag:
                     self.board.update_cell_draw(row, col, 0)

@@ -55,7 +55,9 @@ def generate_puzzle(level, n, block_rows, block_cols):
 def generate_input(level, n=9, block_rows=3, block_cols=3,file = ""):
     level_names = {1:"basic", 2:"easy", 3:"intermediate", 4:"advance", 5:"extreme", 6:"evil"}
     level_str = level_names.get(level, "basic")
-    filename = f"input/random/{level_str}_{n}x{n}_random.txt" if file == None else file
+    filename = f"input/{level_str}_{n}x{n}_random.txt" if file == "" else file
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+
     puzzle, solution = generate_puzzle(level, n, block_rows, block_cols)
     with open(filename, "w") as f:
         for row in puzzle:
