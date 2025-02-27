@@ -1,4 +1,5 @@
 import random
+import os
 
 def is_valid(board, row, col, num, n, block_rows, block_cols):
     if num in board[row]:
@@ -51,10 +52,10 @@ def generate_puzzle(level, n, block_rows, block_cols):
         puzzle[r][c] = 0
     return puzzle, complete_board
 
-def generate_input(level, n=9, block_rows=3, block_cols=3):
+def generate_input(level, n=9, block_rows=3, block_cols=3,file = ""):
     level_names = {1:"basic", 2:"easy", 3:"intermediate", 4:"advance", 5:"extreme", 6:"evil"}
     level_str = level_names.get(level, "basic")
-    filename = f"input/{level_str}_{n}x{n}_random.txt"
+    filename = f"input/random/{level_str}_{n}x{n}_random.txt" if file == None else file
     puzzle, solution = generate_puzzle(level, n, block_rows, block_cols)
     with open(filename, "w") as f:
         for row in puzzle:
@@ -62,6 +63,27 @@ def generate_input(level, n=9, block_rows=3, block_cols=3):
             f.write(line + "\n")
     return puzzle, solution
 
-
-
-
+def generate_testcase(tesecases):
+    level_names = {1:"basic", 2:"easy", 3:"intermediate", 4:"advance", 5:"extreme", 6:"evil"}
+    for n in (9,12,16):
+        if n == 9:
+            block_rows = 3
+            block_cols = 3
+        elif n == 12:
+            block_rows = 3
+            block_cols = 4
+        elif n == 16:
+            block_rows = 4
+            block_cols = 4
+        for level in range(1,7):
+            for i in range(tesecases):
+                file_path = f"input/{n}x{n}/{level_names[level]}/teseCase_{i+1}.txt"
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                puzzle, solution =generate_puzzle(level, n, block_rows, block_cols)
+                with open(file_path, "w") as f:
+                    for row in puzzle:
+                        line = " ".join(str(num) for num in row)
+                        f.write(line + "\n")
+                
+if __name__ == "__main__":
+    generate_testcase(50)
