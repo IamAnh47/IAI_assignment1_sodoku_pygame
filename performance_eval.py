@@ -6,10 +6,12 @@ import tracemalloc
 import concurrent.futures
 import pandas as pd
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 
 from board import Board
 from solve import Solver
 from solve_lcv import LCVSolver
+
 
 def run_solver_on_testcase(test_file, solver_type):
     with open(test_file, 'r') as f:
@@ -45,6 +47,7 @@ def run_solver_on_testcase(test_file, solver_type):
     peak_memory_kb = peak_memory / 1024.0
 
     return (elapsed, peak_memory_kb, solved)
+
 
 def evaluate_testcases():
     tasks = []
@@ -95,7 +98,8 @@ def evaluate_testcases():
             try:
                 result = future.result(timeout=2)
             except concurrent.futures.TimeoutError:
-                print(f"[Timeout] {solver_type}: Test case {os.path.basename(test_file)} exceeded 2 seconds.", flush=True)
+                print(f"[Timeout] {solver_type}: Test case {os.path.basename(test_file)} exceeded 2 seconds.",
+                      flush=True)
                 result = (2, 0, False)
             results.append({
                 "Puzzle": group,
@@ -106,6 +110,7 @@ def evaluate_testcases():
             completed += 1
             print(f"{solver_type}: Finished {completed}/{total_tasks} tasks (Group: {group})", flush=True)
     return results
+
 
 def aggregate_results(results):
     agg = {}
@@ -126,8 +131,8 @@ def aggregate_results(results):
     for (puzzle, algo), data in agg.items():
         count = data["solved_count"]
         if count > 0:
-            avg_time = data["total_time"] / count
-            avg_memory = data["total_memory"] / count
+            avg_time = round(data["total_time"] / count, 4)
+            avg_memory = round(data["total_memory"] / count, 4)
         else:
             avg_time = None
             avg_memory = None
@@ -142,14 +147,61 @@ def aggregate_results(results):
         })
     return pd.DataFrame(aggregated)
 
+
 def save_results_to_excel(df, filename="evaluation_results.xlsx"):
     df.to_excel(filename, index=False)
     print("Kết quả đã được lưu vào file", filename, flush=True)
+
+
+def plot_results(df):
+    # Pivot dữ liệu theo Puzzle và Algorithm
+    pivot_time = df.pivot(index="Puzzle", columns="Algorithm", values="AvgTime (s)")
+    pivot_memory = df.pivot(index="Puzzle", columns="Algorithm", values="AvgMemory (Kb)")
+
+    puzzle_order = ["9x9-basic", "9x9-easy", "9x9-intermediate", "9x9-advance", "9x9-extreme", "9x9-evil",
+                    "12x12", "16x16"]
+    pivot_time = pivot_time.reindex(puzzle_order)
+    pivot_memory = pivot_memory.reindex(puzzle_order)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(pivot_time.index, pivot_time["DFS"], marker='o', label='DFS')
+    plt.plot(pivot_time.index, pivot_time["LCV"], marker='o', label='LCV')
+
+    plt.xlabel('Puzzle')
+    plt.ylabel('Thời gian trung bình (s)')
+    plt.title('Đánh giá thời gian')
+
+    plt.ylim(0, max(pivot_time["DFS"].max(), pivot_time["LCV"].max()) * 1.1)
+    plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+
+    plt.legend()
+    plt.grid(True, which='both', axis='y', linestyle='--', linewidth=0.5)
+    plt.minorticks_on()
+    plt.show()
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(pivot_memory.index, pivot_memory["DFS"], marker='o', label='DFS')
+    plt.plot(pivot_memory.index, pivot_memory["LCV"], marker='o', label='LCV')
+
+    plt.xlabel('Puzzle')
+    plt.ylabel('Bộ nhớ trung bình (Kb)')
+    plt.title('Đánh giá bộ nhớ')
+
+    plt.ylim(0, max(pivot_memory["DFS"].max(), pivot_memory["LCV"].max()) * 1.1)
+    plt.yticks([0, 5, 10, 15, 20, 25])
+
+    plt.legend()
+    plt.grid(True, which='both', axis='y', linestyle='--', linewidth=0.5)
+    plt.minorticks_on()
+    plt.show()
+
 
 def main():
     results = evaluate_testcases()
     df = aggregate_results(results)
     save_results_to_excel(df)
+    plot_results(df)
+
 
 if __name__ == "__main__":
     mp.freeze_support()
