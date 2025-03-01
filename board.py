@@ -80,4 +80,4 @@ class Board:
         # os.system('cls' if os.name == 'nt' else 'clear')
         self.grid[row][col].set_value(value)
         # self.draw_grid(row, col)
-        time.sleep(0.001)
+        # time.sleep(0.001)

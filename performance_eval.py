@@ -1,116 +1,156 @@
-import time
 import os
+import glob
+import re
+import time
 import tracemalloc
+import concurrent.futures
+import pandas as pd
+import multiprocessing as mp
+
 from board import Board
-from solve import Solver as DFSSolver
-from solve_mrv import MRVSolver
-import gen_input
+from solve import Solver
+from solve_lcv import LCVSolver
 
-# Map difficulty level thành tên (cho Sudoku 9x9)
-difficulty_map = {1: "basic", 2: "easy", 3: "intermediate", 4: "advance", 5: "extreme", 6: "evil"}
+def run_solver_on_testcase(test_file, solver_type):
+    with open(test_file, 'r') as f:
+        puzzle = [list(map(int, line.strip().split())) for line in f if line.strip()]
+    n = len(puzzle)
+    if n == 9:
+        block_rows, block_cols = 3, 3
+    elif n == 12:
+        block_rows, block_cols = 3, 4
+    elif n == 16:
+        block_rows, block_cols = 4, 4
+    else:
+        raise ValueError("Unsupported board size")
 
+    board = Board(puzzle, n, block_rows, block_cols)
 
-def evaluate_performance(difficulty, n, block_rows, block_cols, num_cases=100):
-    """
-    Đánh giá hiệu năng của DFS và MRV trên num_cases test case cho một kích thước và cấp độ cụ thể.
-    :param difficulty: Số từ 1 đến 6 (cho 9x9) hoặc 1 (cho 12x12, 16x16)
-    :param n: Kích thước Sudoku (9, 12, hoặc 16)
-    :param block_rows: Số hàng trong block
-    :param block_cols: Số cột trong block
-    :param num_cases: Số test case cần đánh giá
-    :return: (dfs_times, mrv_times, dfs_mems, mrv_mems)
-    """
-    dfs_times = []
-    mrv_times = []
-    dfs_mems = []
-    mrv_mems = []
+    if solver_type == "DFS":
+        solver = Solver(board)
+    elif solver_type == "LCV":
+        solver = LCVSolver(board)
+    else:
+        raise ValueError("Invalid solver type")
 
-    for i in range(num_cases):
-        # Sinh đề bài bằng gen_input (random)
-        puzzle, _ = gen_input.generate_input(difficulty, n, block_rows, block_cols)
+    tracemalloc.start()
+    tracemalloc.reset_peak()
+    start_time = time.perf_counter()
 
-        # Đánh giá DFS
-        board_dfs = Board(puzzle, n, block_rows, block_cols)
-        solver_dfs = DFSSolver(board_dfs)
-        tracemalloc.start()
-        start_time = time.time()
-        try:
-            solver_dfs.solve_dfs(drawFlag=False)
-        except Exception as e:
-            print("DFS Exception:", e)
-        elapsed = time.time() - start_time
-        # Nếu vượt quá 20 giây, quy định thời gian là 20s
-        if elapsed > 20:
-            elapsed = 20
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')
-        mem_usage = top_stats[0].size / 1024 if top_stats else 0
-        dfs_times.append(elapsed)
-        dfs_mems.append(mem_usage)
-        tracemalloc.stop()
+    solved = solver.solve()
+    elapsed = time.perf_counter() - start_time
+    current, peak_memory = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
 
-        # Đánh giá MRV trên cùng một đề bài
-        board_mrv = Board(puzzle, n, block_rows, block_cols)
-        solver_mrv = MRVSolver(board_mrv)
-        tracemalloc.start()
-        start_time = time.time()
-        try:
-            solver_mrv.solve_mrv(drawFlag=False)
-        except Exception as e:
-            print("MRV Exception:", e)
-        elapsed = time.time() - start_time
-        if elapsed > 20:
-            elapsed = 20
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')
-        mem_usage = top_stats[0].size / 1024 if top_stats else 0
-        mrv_times.append(elapsed)
-        mrv_mems.append(mem_usage)
-        tracemalloc.stop()
+    peak_memory_kb = peak_memory / 1024.0
 
-        print(f"Test case {i + 1}/{num_cases} hoàn thành.")
-    return dfs_times, mrv_times, dfs_mems, mrv_mems
+    return (elapsed, peak_memory_kb, solved)
 
+def evaluate_testcases():
+    tasks = []
+    results = []
+    levels = ["basic", "easy", "intermediate", "advance", "extreme", "evil"]
+    for level in levels:
+        folder = os.path.join("input", "9x9", level)
+        all_files = glob.glob(os.path.join(folder, "*.txt"))
+        pattern_str = f"^{level}_[1-9][0-9]*\\.txt$"
+        test_files = [f for f in all_files if re.match(pattern_str, os.path.basename(f))]
+        test_files.sort()
+        for solver_type in ["DFS", "LCV"]:
+            for test_file in test_files:
+                tasks.append({
+                    "group": f"9x9-{level}",
+                    "test_file": test_file,
+                    "solver_type": solver_type
+                })
 
-def save_results(directory, filename, data):
-    """
-    Lưu kết quả (một danh sách các giá trị) vào file.
-    Mỗi dòng chứa một giá trị.
-    """
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    path = os.path.join(directory, filename)
-    with open(path, "w") as f:
-        for value in data:
-            f.write(f"{value}\n")
+    # 12x12 và 16x16 (chỉ cấp basic)
+    for size in [12, 16]:
+        folder = os.path.join("input", f"{size}x{size}", "basic")
+        all_files = glob.glob(os.path.join(folder, "*.txt"))
+        pattern_str = r"^basic_[1-9][0-9]*\.txt$"
+        test_files = [f for f in all_files if re.match(pattern_str, os.path.basename(f))]
+        test_files.sort()
+        for solver_type in ["DFS", "LCV"]:
+            for test_file in test_files:
+                tasks.append({
+                    "group": f"{size}x{size}-basic",
+                    "test_file": test_file,
+                    "solver_type": solver_type
+                })
 
+    total_tasks = len(tasks)
+    print(f"Total tasks: {total_tasks}")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=mp.cpu_count()) as executor:
+        future_to_task = {
+            executor.submit(run_solver_on_testcase, task["test_file"], task["solver_type"]): task
+            for task in tasks
+        }
+        completed = 0
+        for future in concurrent.futures.as_completed(future_to_task):
+            task = future_to_task[future]
+            group = task["group"]
+            test_file = task["test_file"]
+            solver_type = task["solver_type"]
+            try:
+                result = future.result(timeout=2)
+            except concurrent.futures.TimeoutError:
+                print(f"[Timeout] {solver_type}: Test case {os.path.basename(test_file)} exceeded 2 seconds.", flush=True)
+                result = (2, 0, False)
+            results.append({
+                "Puzzle": group,
+                "Testcase": os.path.basename(test_file),
+                "Algorithm": solver_type,
+                "Result": result
+            })
+            completed += 1
+            print(f"{solver_type}: Finished {completed}/{total_tasks} tasks (Group: {group})", flush=True)
+    return results
+
+def aggregate_results(results):
+    agg = {}
+    for entry in results:
+        key = (entry["Puzzle"], entry["Algorithm"])
+        result = entry["Result"]
+        if key not in agg:
+            agg[key] = {"total_time": 0, "total_memory": 0, "solved_count": 0, "unsolved_count": 0, "total": 0}
+        agg[key]["total"] += 1
+        if result[2]:
+            agg[key]["total_time"] += result[0]
+            agg[key]["total_memory"] += result[1]
+            agg[key]["solved_count"] += 1
+        else:
+            agg[key]["unsolved_count"] += 1
+
+    aggregated = []
+    for (puzzle, algo), data in agg.items():
+        count = data["solved_count"]
+        if count > 0:
+            avg_time = data["total_time"] / count
+            avg_memory = data["total_memory"] / count
+        else:
+            avg_time = None
+            avg_memory = None
+        aggregated.append({
+            "Puzzle": puzzle,
+            "Algorithm": algo,
+            "AvgTime (s)": avg_time,
+            "AvgMemory (Kb)": avg_memory,
+            "SolvedCount": data["solved_count"],
+            "UnsolvedCount": data["unsolved_count"],
+            "TotalTestcases": data["total"]
+        })
+    return pd.DataFrame(aggregated)
+
+def save_results_to_excel(df, filename="evaluation_results.xlsx"):
+    df.to_excel(filename, index=False)
+    print("Kết quả đã được lưu vào file", filename, flush=True)
 
 def main():
-    # Đánh giá cho Sudoku 9x9 với tất cả các cấp độ
-    for diff in range(1, 7):
-        print(f"Đang đánh giá 9x9, cấp độ: {difficulty_map[diff]}")
-        dfs_times, mrv_times, dfs_mems, mrv_mems = evaluate_performance(diff, 9, 3, 3, num_cases=100)
-        time_data = [f"{dfs_times[i]},{mrv_times[i]}" for i in range(100)]
-        mem_data = [f"{dfs_mems[i]},{mrv_mems[i]}" for i in range(100)]
-        save_results("time/9x9", f"{difficulty_map[diff]}.txt", time_data)
-        save_results("memory/9x9", f"{difficulty_map[diff]}.txt", mem_data)
-
-    # Đánh giá cho Sudoku 12x12 (chỉ cấp độ Basic)
-    print("Đang đánh giá 12x12, cấp độ: basic")
-    dfs_times, mrv_times, dfs_mems, mrv_mems = evaluate_performance(1, 12, 3, 4, num_cases=100)
-    time_data = [f"{dfs_times[i]},{mrv_times[i]}" for i in range(100)]
-    mem_data = [f"{dfs_mems[i]},{mrv_mems[i]}" for i in range(100)]
-    save_results("time/12x12", "basic.txt", time_data)
-    save_results("memory/12x12", "basic.txt", mem_data)
-
-    # Đánh giá cho Sudoku 16x16 (chỉ cấp độ Basic)
-    print("Đang đánh giá 16x16, cấp độ: basic")
-    dfs_times, mrv_times, dfs_mems, mrv_mems = evaluate_performance(1, 16, 4, 4, num_cases=100)
-    time_data = [f"{dfs_times[i]},{mrv_times[i]}" for i in range(100)]
-    mem_data = [f"{dfs_mems[i]},{mrv_mems[i]}" for i in range(100)]
-    save_results("time/16x16", "basic.txt", time_data)
-    save_results("memory/16x16", "basic.txt", mem_data)
-
+    results = evaluate_testcases()
+    df = aggregate_results(results)
+    save_results_to_excel(df)
 
 if __name__ == "__main__":
+    mp.freeze_support()
     main()

@@ -7,7 +7,7 @@ import tracemalloc
 import colorsys
 from board import Board
 from solve import Solver as DFSSolver
-from solve_mrv import MRVSolver
+from solve_lcv import LCVSolver
 import gen_input
 
 WHITE = (255, 255, 255)
@@ -215,13 +215,13 @@ class SudokuGame:
                 callback=lambda: self.select_algorithm(1),
                 font=self.font
             )
-            mrv_btn = Button(
+            lcv_btn = Button(
                 rect=(start_x + button_width + spacing, y, button_width, button_height),
-                text="MRV",
+                text="LCV",
                 callback=lambda: self.select_algorithm(2),
                 font=self.font
             )
-            self.algo_buttons.extend([dfs_btn, mrv_btn])
+            self.algo_buttons.extend([dfs_btn, lcv_btn])
             self.toggle = Toggle(
                 rect=(start_x + 2*button_width + 2*spacing, y, toggle_width, button_height),
                 initial=False,
@@ -314,7 +314,7 @@ class SudokuGame:
 
     def select_algorithm(self, algo):
         self.algorithm = algo
-        print("Chọn thuật toán:", "DFS" if algo == 1 else "MRV")
+        print("Chọn thuật toán:", "DFS" if algo == 1 else "LCV")
         self.step_by_step = self.toggle.state
         self.state = "solving"
         tracemalloc.start()
@@ -323,7 +323,7 @@ class SudokuGame:
             measure_solver = DFSSolver(self.board_obj)
             measure_func = measure_solver.solve
         else:
-            measure_solver = MRVSolver(self.board_obj)
+            measure_solver = LCVSolver(self.board_obj)
             measure_func = measure_solver.solve
         measure_func(drawFlag=False)
         measured_time = time.time() - self.solve_start_time
@@ -355,7 +355,7 @@ class SudokuGame:
                 self.solver = DFSSolver(self.board_obj)
                 solve_func = self.solver.solve
             else:
-                self.solver = MRVSolver(self.board_obj)
+                self.solver = LCVSolver(self.board_obj)
                 solve_func = self.solver.solve
             self.solve_thread = threading.Thread(target=self.run_solver_animation, args=(solve_func,))
             self.solve_thread.start()
